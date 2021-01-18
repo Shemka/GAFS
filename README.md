@@ -10,7 +10,7 @@ Genetic Algorithm Feature Selection is a library for ML solutions better perfoma
 ```conda install --file requirements.txt```
 
 ## Quick start
-Let's check few examples of library usage. First of all import all modules and create dataset:
+Let's check few examples of library usage. First of all, import all modules and create dataset:
 ```python
 import numpy as np
 from sklearn.datasets import make_classification
