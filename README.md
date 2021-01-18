@@ -56,7 +56,14 @@ Get features mask:
 mask = sgs.get_best_params()
 ```
 ## Tests
-  All the tests can be found in `tests.py` where algorithm was evaluated in some simple tasks.
+  All the tests can be found in `tests.py` where algorithm was evaluated in some simple tasks. Tests results:
+|Dataset|Initial score|Initial features count|Final score|Final features count|
+|:-----:|:-----------:|:--------------------:|:---------:|:------------------:|
+|Sintetic (4 informative features)|0.794|50|0.901|9|
+|Boston|10.9195|13|10.5168|12|
+|Breast cancer|0.952|30|1.0|11|
+|Wine|0.916|13|1.0|8|
+|California housing|0.2449|8|0.2158|4|
 ## TODO
 - Documentation;
 - CatBoost, XGBoost, LightGBM special classes with early stoppings.
