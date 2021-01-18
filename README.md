@@ -55,6 +55,8 @@ Get features mask:
 ```python
 mask = sgs.get_best_params()
 ```
-# TODO:
+## Tests
+  All the tests can be found in `tests.py` where algorithm was evaluated in some simple tasks.
+## TODO
 - Documentation;
 - CatBoost, XGBoost, LightGBM special classes with early stoppings.
