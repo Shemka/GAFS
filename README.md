@@ -3,12 +3,8 @@
 ## What is it?
 Genetic Algorithm Feature Selection (GAFS) is a fast and flexible library for model-based feature selection. It aims to be a bridge between Evolution ideas and Feature selection domain. It helps speed up ML solutions development by providing easy-to-use and flexible abstractions.
 
-## Installation (PyPi comming soon...)
-```git clone  https://github.com/Shemka/GAFS.git```
-### Pip
-```pip install -r requirements.txt```
-### Conda
-```conda install --file requirements.txt```
+## Installation
+```pip install --user gafs```
 
 ## Quick start
 Let's check few examples of library usage. First of all, import all modules and create dataset:
