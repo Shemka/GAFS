@@ -52,6 +52,13 @@ Get features mask:
 ```python
 mask = sgs.get_best_params()
 ```
+Plotting history:
+```python
+sgs.plot_history()
+```
+Output:
+
+![Plot](https://github.com/Shemka/GAFS/blob/main/images/plot.png)
 ## Tests
   All the tests can be found in `tests.py` where algorithm was evaluated in some simple tasks. Tests results:
 |Dataset|Initial score|Initial features count|Final score|Final features count|
