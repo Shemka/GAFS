@@ -72,4 +72,4 @@ Output:
 [Easy-to-understand article on GA](https://towardsdatascience.com/introduction-to-genetic-algorithms-including-example-code-e396e98d8bf3).
 ## TODO
 - Documentation;
-- CatBoost, XGBoost, LightGBM special classes with early stoppings.
+- XGBoost, LightGBM special classes.
