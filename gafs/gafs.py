@@ -3,6 +3,7 @@ import random as rnd
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
 from tqdm import trange
+import matplotlib.pyplot as plt
 
 class bcolors:
     HEADER = '\033[95m'
@@ -93,6 +94,7 @@ class SklearnGeneticSelection(object):
         self.k_best = config['k_best']
         self.init_type = config['init_type']
         self.random_state = config['random_state']
+        self.scores_history = []
 
 
         self.best_score = None
@@ -450,9 +452,17 @@ class SklearnGeneticSelection(object):
 
         return population
 
+    def plot_history(self):
+        plt.figure(figsize=(10, 6))
+        plt.plot(np.arange(len(self.scores_history)), self.scores_history, linewidth=2)
+        plt.xlabel('Epoch')
+        plt.ylabel('Score')
+        plt.show()
+
     def get_best_params(self):
         return self.best_chromosome == 1
 
+    # Return scores history
     def fit(self, X_train, y_train):
 
         # Initialization
@@ -472,6 +482,7 @@ class SklearnGeneticSelection(object):
         for epoch in pbar:
             # Getting score vector of the population
             scores = self._get_score_vector(population, X_train, y_train, eval_set)
+            self.scores_history.append(max(scores))
 
             # Best score and chromosome saving
             if self.best_score is None:
@@ -497,3 +508,166 @@ class SklearnGeneticSelection(object):
             print(bcolors.HEADER, 'Final score:', self._compute_score(X_train[:, self.best_chromosome==1], y_train, (X_val[:, self.best_chromosome==1], y_val)), bcolors.ENDC)
             print(bcolors.HEADER, 'Final features count:', self.best_chromosome.sum(), bcolors.ENDC)
             print()
+        
+        return self.scores_history
+
+class CatBoostGeneticSelection(SklearnGeneticSelection):
+    def __init__(self, model, params):
+        '''
+            PARAMETERS:
+            • model — sklearn-like model which will be used for scoring;
+            • params — parameters dictionary:
+                ○ epochs — iterations count (required);
+                ○ population_size — number of chromosomes in population (required);
+                ○ score_f — sklearn-like metric function name (required);
+                ○ mode — do maximization or minimization of objective function (default is 'max').
+                    Possible values: 'min', 'max';
+                ○ selection_type — chromosomes selection algorithm (default is 'k_best').
+                    Possible values: 'k_best', 'luckers_best';
+                ○ parents_selection — parents selection algorithm (default is 'k_way');
+                ○ crossover_type — crossover algorithm (default is 'random_parts').
+                    Possible values: 'random_parts', 'one_split', 'two_splits', 'random';
+                ○ mutation_type — mutation algorithm (default is 'flip').
+                    Possible values: 'flip', 'remove', 'swap', 'reverse', 'shuffle', 'random';
+                ○ init_type — initialization algorithm (default is 'random');
+                ○ k_best — percentage of the best chromosomes in population (default is 0.5);
+                ○ mutation_proba — mutation probability (default is 0.8);
+                ○ do_val — if validation is required then do_val must be a value in (0;1) 
+                            else do_val must equal to 0 (default is 0.1);
+                ○ k — number of chromosomes choose from is parents selection stage (default is 3);
+                ○ needs_proba — if there requirements in probability prediction or not (default False);
+                ○ verbose — if there verbosity is required (default 1);
+                ○ cat_features — categorical features passed in CatBoost model (default is None);
+                ○ random_state — random state (default 0).
+        '''
+
+        keys = list(params.keys())
+
+        assert 'epochs' in keys
+        assert 'population_size' in keys
+        assert 'score_f' in keys
+
+        self.base_model = model
+        
+        config = {
+            'cat_features':None,
+            'verbose':1,
+            'mutation_proba':.8,
+            'mode':'max',
+            'do_val':.1,
+            'needs_proba':False,
+            'selection_type':'k_best',
+            'parents_selection':'k_way',
+            'crossover_type':'random_parts',
+            'mutation_type':'flip',
+            'k':3,
+            'k_best':.5,
+            'init_type':'random',
+            'random_state':0
+        }
+        _keys = list(config.keys())+['epochs', 'population_size', 'score_f']
+
+        for el in keys:
+            if not el in _keys:
+                raise ValueError(f"Unknown parameter {bcolors.BOLD}\'{el}\'{bcolors.ENDC}")
+
+        config.update(params)
+
+        self.epochs = config['epochs']
+        self.population_size = config['population_size']
+        self.score_f = config['score_f']
+        
+        self.verbose = config['verbose']
+        self.mutation_proba = config['mutation_proba']
+        self.mode = config['mode']
+        self.do_val = config['do_val']
+        self.needs_proba = config['needs_proba']
+        self.selection_type = config['selection_type']
+        self.parents_selection = config['parents_selection']
+        self.crossover_type = config['crossover_type']
+        self.mutation_type = config['mutation_type']
+        self.k = config['k']
+        self.k_best = config['k_best']
+        self.init_type = config['init_type']
+        self.cat_features = config['cat_features']
+        self.random_state = config['random_state']
+        self.scores_history = []
+
+
+        self.best_score = None
+        self.best_chromosome = None
+        self.initial_score = None
+        self.population_history = {
+            'populations': None,
+            'scores': None
+        }
+
+        assert self.mutation_proba > 0 and self.mutation_proba <= 1, 'Parameter \'mutation_proba\' must be defined on (0;1].'
+        assert self.do_val >= 0 and self.do_val <= 1, 'Parameter \'do_val\' must be defined on [0;1].'
+        assert self.needs_proba in [True, False], 'Parameter \'needs_proba\' accepts only booleans.'
+        assert self.selection_type in ['k_best', 'luckers_best'], 'Parameter \'selection_type\' accepts only \'k_best\' and \'luckers_best\'.'
+        assert self.parents_selection in ['k_way'], 'Parameter \'parents_selection\' accepts only \'k_way\'.'
+        assert self.crossover_type in ['random_parts', 'one_split', 'two_splits', 'random'], 'Parameter \'crossover_type\' accepts only \'random_parts\', \'one_split\', \'two_splits\', \'random\'.'
+        assert self.mutation_type in ['flip', 'swap', 'reverse', 'remove', 'shuffle', 'random'], 'Parameter \'mutation_type\' accepts only \'flip\', \'swap\', \'reverse\', \'remove\', \'shuffle\', \'random\'.'
+        assert self.selection_type == 'k_best' and isinstance(self.k, int), 'Parameter \'k\' must be interger.'
+        assert self.parents_selection == 'k_way' and (int(self.population_size*self.k_best) - self.k) > 0, 'Parameter \'k\' must be less than population_size*k_best-1.'
+        assert self.k_best > 0 and self.k_best < 1, 'Parameter \'k_best\' must be defined on (0;1).'
+        assert self.init_type in ['random'], 'Parameter \'init_type\' accepts only \'random\''
+        
+        # SEED INITIALIZATION
+        np.random.seed(self.random_state)
+        rnd.seed(self.random_state)
+
+    # SCORING PHASE
+    # Fit and evaluate model for getting chromosome score.
+    def _compute_score(self, X, y, eval_set=None):
+        model = clone(self.base_model)
+        model.fit(X, y, self.cat_features, eval_set=eval_set, use_best_model=True)
+        
+        score = None
+        if self.needs_proba:
+            if not eval_set is None:
+                preds = model.predict_proba(eval_set[0])
+                score = self.score_f(eval_set[1], preds)
+            else:
+                preds = model.predict_proba(X)
+                score = self.score_f(y, preds)
+        else:
+            if not eval_set is None:
+                preds = model.predict(eval_set[0])
+                score = self.score_f(eval_set[1], preds)
+            else:
+                preds = model.predict(X)
+                score = self.score_f(y, preds)
+        
+        return score
+
+if __name__ == '__main__':
+    from sklearn.ensemble import RandomForestClassifier
+    from sklearn.metrics import f1_score
+    from sklearn.datasets import make_classification
+    SEED=1337
+    params = {
+            'epochs':20,
+            'population_size':20,
+            'verbose':1,
+            'mutation_proba':.8,
+            'mode':'max',
+            'do_val':.2,
+            'needs_proba':False,
+            'selection_type':'k_best',
+            'parents_selection':'k_way',
+            'crossover_type':'random',
+            'mutation_type':'random',
+            'k':5,
+            'k_best':.5,
+            'init_type':'random',
+            'random_state':SEED
+        }
+
+    params['score_f'] = f1_score
+    print(f'{bcolors.OKCYAN}Sintetic classification test (4 informative features, 1000 samples) | F1 score:{bcolors.ENDC}')
+    X, y = make_classification(n_samples=1000, n_features=50, n_informative=4, n_repeated=0, n_classes=2, shuffle=True, random_state=0)
+    sgs = SklearnGeneticSelection(RandomForestClassifier(random_state=SEED), params)
+    sgs.fit(X, y)
+    sgs.plot_history()
