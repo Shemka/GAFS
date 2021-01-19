@@ -1,7 +1,7 @@
 # GAFS: powerful Python feature selection Toolkit
 
 ## What is it?
-Genetic Algorithm Feature Selection (GAFS) is a fast and flexible library for model-based feature selection. It aims to be a bridge between Evolution ideas and Feature selection domain. It helps speed up ML solutions development by providing easy-to-use and flexible abstractions. [Easy-to-understand article on GA](https://towardsdatascience.com/introduction-to-genetic-algorithms-including-example-code-e396e98d8bf3).
+Genetic Algorithm Feature Selection (GAFS) is a fast and flexible library for model-based feature selection. It aims to be a bridge between Evolution ideas and Feature selection domain. It helps speed up ML solutions development by providing easy-to-use and flexible abstractions.
 
 ## Installation (PyPi comming soon...)
 ```git clone  https://github.com/Shemka/GAFS.git```
@@ -65,6 +65,8 @@ mask = sgs.get_best_params()
 |Breast cancer|0.952|30|1.0|11|
 |Wine|0.916|13|1.0|8|
 |California housing|0.2449|8|0.2158|4|
+## Credits
+[Easy-to-understand article on GA](https://towardsdatascience.com/introduction-to-genetic-algorithms-including-example-code-e396e98d8bf3).
 ## TODO
 - Documentation;
 - CatBoost, XGBoost, LightGBM special classes with early stoppings.
